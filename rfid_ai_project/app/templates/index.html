@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RFID Signal Enhancer 2</title>
+    <link rel="stylesheet" href="\static\style.css" />
+</head>
+
+<body>
+    <h1 class="page-title">AI induced RFID Signal Enhancer</h1>
+
+    <div class="container">
+        <div class="rules-panel">
+            <h2>Input Rules</h2>
+            <ul>
+                <li>Enter at least <strong>10</strong> signal values.</li>
+                <li>Maximum recommended: <strong>20</strong> values.</li>
+                <li>Separate values using <strong>commas</strong>.</li>
+                <li>Use <strong>decimal numbers</strong> (e.g., 1.2, 3.4).</li>
+                <li>Example: <code>0.5,1.2,1.9,2.4,3.1,3.9...   </code></li>
+            </ul>
+        </div>
+
+        <div class="main-panel">
+            <h1>RFID Signal Enhancer</h1>
+            <form id="signalForm">
+                <input type="text" id="signalInput" placeholder="Enter RFID signal (comma-separated)" />
+                <button type="submit">Enhance Signal</button>
+            </form>
+            <pre id="result"></pre>
+        </div>
+    </div>
+
+    <script>
+        const signalInput = document.getElementById('signalInput');
+        const signalForm = document.getElementById('signalForm');
+        const resultDiv = document.getElementById('result');
+
+        const minLength = 10;
+        const maxLength = 20;
+
+        const counter = document.createElement('div');
+        counter.id = 'counter';
+        counter.style.marginTop = '6px';
+        counter.style.fontSize = '14px';
+        counter.style.color = '#ccc';
+        signalInput.parentNode.appendChild(counter);
+
+        const validateSignal = () => {
+            const values = signalInput.value.split(',').map(x => x.trim()).filter(x => x !== '');
+            const count = values.length;
+            counter.textContent = `Entered: ${count} / ${maxLength} values`;
+
+            if (count < minLength || count > maxLength || values.some(v => isNaN(v))) {
+                signalInput.style.borderColor = '#ff5252';
+                counter.style.color = '#ff5252';
+                return false;
+            } else {
+                signalInput.style.borderColor = '#4caf50';
+                counter.style.color = '#ccc';
+                return true;
+            }
+        };
+
+        // Clear on load
+        window.onload = () => {
+            signalInput.value = '';
+            resultDiv.textContent = '';
+            signalInput.style.borderColor = '';
+            counter.textContent = '';
+        };
+
+        signalInput.addEventListener('input', validateSignal);
+
+        signalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            resultDiv.textContent = '';
+
+            if (!validateSignal()) {
+                resultDiv.textContent = `❗ Please enter between ${minLength} and ${maxLength} valid numbers separated by commas.`;
+                resultDiv.style.color = '#ff5252';
+                return;
+            }
+
+            const signal = signalInput.value.trim();
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ signal })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = "✅ Enhanced Signal:\n" + data.enhanced_signal;
+                    resultDiv.style.color = '#4caf50';
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.textContent = "Error:\n" + JSON.stringify(errorData.detail, null, 2);
+                    resultDiv.style.color = '#ff5252';
+                }
+            } catch (error) {
+                resultDiv.textContent = "Network or server error. Please try again.";
+                resultDiv.style.color = '#ff5252';
+            }
+        });
+    </script>
+
+
+    
+</body>
+</html>
+
